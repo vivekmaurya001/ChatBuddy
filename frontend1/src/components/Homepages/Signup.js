@@ -126,9 +126,11 @@ const Signup = () => {
     }
   };
   return (
-    <Stack direction="column" spacing={3}>
+    <Stack direction="column" spacing={1}>
       <FormControl>
-        <FormLabel>Name</FormLabel>
+        <FormLabel fontSize={15} fontWeight={900}>
+          Name
+        </FormLabel>
         <Input
           value={Name}
           onChange={(e) => setName(e.target.value)}
@@ -137,7 +139,9 @@ const Signup = () => {
           minLength="3"
           placeholder="Enter your Name...."
         />
-        <FormLabel>Email Address</FormLabel>
+        <FormLabel fontSize={15} fontWeight={900}>
+          Email Address
+        </FormLabel>
         <Input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -146,7 +150,9 @@ const Signup = () => {
           type="email"
           placeholder="Enter  email...."
         />
-        <FormLabel>Password</FormLabel>
+        <FormLabel fontSize={15} fontWeight={900}>
+          Password
+        </FormLabel>
         <InputGroup>
           <Input
             pr="4.5rem"
@@ -163,7 +169,9 @@ const Signup = () => {
             </Button>
           </InputRightElement>
         </InputGroup>
-        <FormLabel>Confirm Password</FormLabel>
+        <FormLabel fontSize={15} fontWeight={900}>
+          Confirm Password
+        </FormLabel>
         <Input
           value={confirmpassword}
           onChange={(e) => setconfirmPassword(e.target.value)}
@@ -171,7 +179,9 @@ const Signup = () => {
           type="password"
           placeholder="Confirm password...."
         />
-        <FormLabel>Profile Photo</FormLabel>
+        <FormLabel fontSize={15} fontWeight={900}>
+          Profile Photo
+        </FormLabel>
         <Input
           accept="image/*"
           onChange={handleImage}
@@ -181,7 +191,7 @@ const Signup = () => {
           placeholder="Confirm password...."
         />
       </FormControl>
-      <Box mb={2}>
+      <Box mb={1}>
         <Button
           w="100%"
           colorScheme="blue"

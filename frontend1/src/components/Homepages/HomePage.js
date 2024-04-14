@@ -55,15 +55,21 @@ const HomePage = () => {
                 src="favico/android-chrome-192x192.png"
                 alt="Dan Abramov"
               />
-              <Box fontSize="x-large" cursor={"pointer"}>
-                <Link to="/" fontSize={28}>
-                  ChatBuddy
-                </Link>
-              </Box>
+              {isLargerThan950 ? (
+                <Box fontSize="x-large" cursor={"pointer"}>
+                  <Link to="/" fontSize={28}>
+                    ChatBuddy
+                  </Link>
+                </Box>
+              ) : null}
             </Box>
             <Box display="flex" gap="32px" alignItems="center">
-              <Button>Homepage</Button>
-              <Button>Services</Button>
+              <Button>
+                <i class="fab fa-twitter"></i>
+              </Button>
+              <Button>
+                <i class="fab fa-linkedin-in"></i>
+              </Button>
             </Box>
           </Box>
           <Box
