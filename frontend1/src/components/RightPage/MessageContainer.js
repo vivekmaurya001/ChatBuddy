@@ -16,7 +16,7 @@ import MessageItem from "./MessageItem";
 import io from "socket.io-client";
 import Lottie from "react-lottie";
 import animationData from "../animation/Animation.json";
-const ENDPOINT = "http://localhost:5000";
+const ENDPOINT = "https://chatbuddy-4.onrender.com";
 
 var socket, selectedChatCompare;
 
@@ -78,7 +78,7 @@ const MessageContainer = ({ fetchAgain, setFetchAgain }) => {
         },
       };
       const { data } = await axios.get(
-        `/api/message/${selectedChat._id}`,
+        `https://chatbuddy-4.onrender.com/api/message/${selectedChat._id}`,
         config1
       );
 
@@ -111,7 +111,7 @@ const MessageContainer = ({ fetchAgain, setFetchAgain }) => {
           },
         };
         const { data } = await axios.post(
-          `/api/message`,
+          `https://chatbuddy-4.onrender.com/api/message`,
           {
             chatId: selectedChat._id,
             content: newmessage,
