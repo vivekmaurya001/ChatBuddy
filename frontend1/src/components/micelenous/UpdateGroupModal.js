@@ -58,7 +58,7 @@ const UpdateGroupModal = ({ fetchAgain, setFetchAgain }) => {
         },
       };
 
-      const { data } = await axios.get(`/api/user?search=${search}`, config);
+      const { data } = await axios.get(`https://chatbuddy-4.onrender.com/api/user?search=${search}`, config);
       setLoading(false);
       SetsearchResults(data);
     } catch (error) {
@@ -100,7 +100,7 @@ const UpdateGroupModal = ({ fetchAgain, setFetchAgain }) => {
         },
       };
       const { data } = await axios.put(
-        `/api/chat/rename`,
+        `https://chatbuddy-4.onrender.com/api/chat/rename`,
         {
           chatId: selectedChat._id,
           chatName: newName,
@@ -158,7 +158,7 @@ const UpdateGroupModal = ({ fetchAgain, setFetchAgain }) => {
         },
       };
       const { newdata1 } = await axios.put(
-        `/api/chat/groupadd`,
+        `https://chatbuddy-4.onrender.com/api/chat/groupadd`,
         {
           chatId: selectedChat._id,
           userId: UserID,
@@ -199,7 +199,7 @@ const UpdateGroupModal = ({ fetchAgain, setFetchAgain }) => {
         },
       };
       const { newdata } = await axios.put(
-        `/api/chat/groupremove`,
+        `https://chatbuddy-4.onrender.com/api/chat/groupremove`,
         {
           chatId: selectedChat._id,
           userId: UserID,
