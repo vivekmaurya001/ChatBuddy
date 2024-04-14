@@ -89,7 +89,7 @@ const Signup = () => {
         payload.pic = Image;
       }
       console.log(payload);
-      const { data } = await axios.post(`/api/user`, payload, config);
+      const { data } = await axios.post(`https://chatbuddy-4.onrender.com/api/user`, payload, config);
 
       console.log(data);
       if (data.success) {
