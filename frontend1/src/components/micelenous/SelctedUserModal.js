@@ -59,7 +59,7 @@ const SelctedUserModal = ({ fetchAgain, setFetchAgain }) => {
       };
 
       const { data } = await axios.delete(
-        `/api/chat`,
+        `https://chatbuddy-4.onrender.com/api/chat`,
         {
           data: { ChatId: selectedChat._id },
         },
