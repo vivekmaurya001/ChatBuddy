@@ -77,7 +77,7 @@ const Updateprofile = ({ setClicked }) => {
         payload.pic = image;
       }
 
-      const { data } = await axios.put("/api/user/update", payload, config);
+      const { data } = await axios.put("https://chatbuddy-4.onrender.com/api/user/update", payload, config);
 
       console.log(data);
       const Updateduser = user;
