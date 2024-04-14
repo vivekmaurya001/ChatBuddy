@@ -54,7 +54,7 @@ const Login = () => {
         },
       };
       const { data } = await axios.post(
-        `/api/user/login`,
+        `https://chatbuddy-4.onrender.com/api/user/login`,
         {
           email: email,
           password: password,
