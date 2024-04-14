@@ -53,7 +53,7 @@ const SearchDrawer = () => {
         },
       };
 
-      const { data } = await axios.get(`/api/user?search=${search}`, config);
+      const { data } = await axios.get(`https://chatbuddy-4.onrender.com/api/user?search=${search}`, config);
       setLoading(false);
       SetsearchResults(data);
     } catch (error) {
@@ -85,7 +85,7 @@ const SearchDrawer = () => {
           Authorization: `Bearer ${user.auhToken}`,
         },
       };
-      const { data } = await axios.post(`/api/chat`, { userId: id }, config);
+      const { data } = await axios.post(`https://chatbuddy-4.onrender.com/api/chat`, { userId: id }, config);
       console.log(data);
       if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
       setSelectedChat(data);
