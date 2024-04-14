@@ -44,7 +44,7 @@ const ChatTabs = ({
           Authorization: `Bearer ${user.auhToken}`,
         },
       };
-      const { data } = await axios.get("/api/chat", config);
+      const { data } = await axios.get("https://chatbuddy-4.onrender.com/api/chat", config);
       console.log("hi", data);
       setChats(data);
     } catch (error) {
