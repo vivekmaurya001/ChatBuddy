@@ -117,7 +117,7 @@ const SideTabs = ({ setClicked }) => {
               objectFit="cover"
               h="100px"
               w="180px"
-              src="images/Logo.png"
+              src="images/Logo2.png"
               alt="Logo"
             />
           </DrawerHeader>
