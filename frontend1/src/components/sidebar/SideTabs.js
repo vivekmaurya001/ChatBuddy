@@ -201,7 +201,7 @@ const SideTabs = ({ setClicked }) => {
                   <MoonIcon />
                   Dark Mode
                 </Text>
-                <Switch colorScheme="red" />
+              
               </Button>
               <Button
                 h="50px"
