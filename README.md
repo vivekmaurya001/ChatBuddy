@@ -44,7 +44,6 @@ ChatBuddy is a fully responsive real-time chat application that enables users to
 
   - Built with **React**, **Zego Cloud**, and **Chakra UI**.
   - Utilizes **WebSocket (e.g., Socket.IO)** for real-time communication.
-  - Responsive design using **Bootstrap 5.2**.
 
 - **Backend**:
   - Powered by **Node.js** and **Express.js**.
