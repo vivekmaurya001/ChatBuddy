@@ -18,8 +18,9 @@ import {
   Text,
   Flex,
   useMediaQuery,
+  Stack,
 } from "@chakra-ui/react";
-import { UnlockIcon } from "@chakra-ui/icons";
+import { UnlockIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import Login from "./Login";
 import Signup from "./Signup";
 import { useNavigate } from "react-router-dom";
@@ -38,38 +39,82 @@ const HomePage = () => {
       <div>
         <Box bg="transparent" h="100vh" w="100vw">
           <Box
+            w="90vw"
+            h="100px"
             display="flex"
             justifyContent="space-between"
-            alignItems="center"
-            mb="96px"
             fontWeight="bold"
-            py="4px"
-            textColor="white"
-            w="80%"
-            m={"0 auto"}
+            pt="1rem"
           >
-            <Box display="flex" alignItems="center" gap="4px" mt="6px">
+            <Box
+              fontSize="x-large"
+              display="flex"
+              alignItems="center"
+              gap="4px"
+            >
               <Image
-                boxSize="100px"
                 objectFit="cover"
-                src="favico/android-chrome-192x192.png"
-                alt="Dan Abramov"
+                h="160px"
+                w="200px"
+                src="images/Logo2.png"
+                alt="Logo"
               />
-              {isLargerThan950 ? (
-                <Box fontSize="x-large" cursor={"pointer"}>
-                  <Link to="/" fontSize={28}>
-                    ChatBuddy
-                  </Link>
-                </Box>
-              ) : null}
             </Box>
-            <Box display="flex" gap="32px" alignItems="center">
-              <Button>
-                <i class="fab fa-twitter"></i>
-              </Button>
-              <Button>
-                <i class="fab fa-linkedin-in"></i>
-              </Button>
+            <Box display="flex" alignItems="center">
+              {" "}
+              {isLargerThan950 ? (
+                <>
+                  <Menu>
+                    <MenuButton
+                      bg="transparent"
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                    >
+                      Features
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem>Profile</MenuItem>
+                      <MenuItem>Logout</MenuItem>
+                    </MenuList>
+                  </Menu>
+                  <Menu>
+                    <MenuButton
+                      bg="transparent"
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                    >
+                      Use Cases
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem>Profile</MenuItem>
+                      <MenuItem>Logout</MenuItem>
+                    </MenuList>
+                  </Menu>
+                  <Menu>
+                    <MenuButton
+                      bg="transparent"
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                    >
+                      Resourses
+                    </MenuButton>
+                    <MenuList>
+                      <MenuItem>Profile</MenuItem>
+                      <MenuItem>Logout</MenuItem>
+                    </MenuList>
+                  </Menu>
+                </>
+              ) : null}
+              <div className="buttons">
+                <Button
+                  color={"white"}
+                  bgColor="#136dff"
+                  borderRadius={20}
+                  w="150px"
+                >
+                  <Link to="/login">Sign Up</Link>
+                </Button>
+              </div>
             </Box>
           </Box>
           <Box
@@ -82,7 +127,7 @@ const HomePage = () => {
             mt={30}
           >
             <Box
-              w={isLargerThan950 ? "40%" : "80%"}
+              w={isLargerThan950 ? "40%" : "98%"}
               p={4}
               m="0 auto"
               textAlign="center"
@@ -93,6 +138,19 @@ const HomePage = () => {
               alignItems="center"
             >
               {" "}
+              <Flex h="150px" alignItems={"center"}>
+                <Stack>
+                  <Heading>Get Closer To EveryOne</Heading>
+                  <Text>Helps you to contact everyone with just easy way</Text>
+                </Stack>
+                <Image
+                  objectFit="cover"
+                  h="120px"
+                  w="120px"
+                  src="images/LoginPage.png"
+                  alt="Logo"
+                />
+              </Flex>
               <Tabs>
                 <TabList gap="4" display="flex" justifyContent="space-between">
                   <Tab w="45%">Sign Up</Tab>
