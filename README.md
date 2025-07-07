@@ -70,7 +70,7 @@ Watch a live demo of ChatBuddy in action! [View Demo](https://drive.google.com/f
 
 ## Deployed Site link
 
-Watch a live demo of ChatBuddy in action! [View Demo](https://chat-buddy-hgxs6aqne-vivek-mauryas-projects.vercel.app)
+Watch a live demo of ChatBuddy in action! [View Demo](https://chat-buddy-01.vercel.app/)
 
 ## Explore ChatBuddy
 
