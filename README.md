@@ -71,11 +71,3 @@ Watch a live demo of ChatBuddy in action! [View Demo](https://drive.google.com/f
 ## Deployed Site link
 
 Watch a live demo of ChatBuddy in action! [View Demo](https://chat-buddy-01.vercel.app/)
-
-## Explore ChatBuddy
-
-Visit the live ChatBuddy app: ChatBuddy App
-
-Feel free to explore the code on GitHub.
-
-Happy chatting! 🎉📱💬
