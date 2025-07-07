@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Drawer,
   DrawerBody,
@@ -22,146 +22,129 @@ import { ChatState } from "../../Context/ChatProvider";
 import axios from "axios";
 import UserListItem from "../UserListItem";
 
+const PORT = process.env.REACT_APP_BACKEND_URL;
+
 const SearchDrawer = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const btnRef = React.useRef();
-  const [search, Setsearch] = useState("");
-  const [searchResults, SetsearchResults] = useState([]);
+  const btnRef = useRef();
+
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
+
   const toast = useToast();
   const { user, chats, setChats, setSelectedChat, theme } = ChatState();
 
-  //for searching a user in db through a keyword in email or name
-  const submitHandler = async () => {
+  const handleSearch = async () => {
     if (!search) {
-      toast({
-        title: "Please enter Something in search",
+      return toast({
+        title: "Please enter something",
         status: "error",
         duration: 3000,
         isClosable: true,
         position: "top-left",
       });
-      return;
     }
+
     try {
       setLoading(true);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-
-      const { data } = await axios.get(`https://chatbuddy-4.onrender.com/api/user?search=${search}`, config);
-      setLoading(false);
-      SetsearchResults(data);
-    } catch (error) {
+      const { data } = await axios.get(
+        `${PORT}/api/user?search=${search}`,
+        {
+          headers: { Authorization: `Bearer ${user.auhToken}` },
+        }
+      );
+      setResults(data);
+    } catch {
       toast({
-        title: "Error Occured!",
-        description: "Failed to Load the Search Results",
+        title: "Error fetching users",
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom-left",
       });
+    } finally {
       setLoading(false);
     }
   };
-  //for running submitHandler through Enter
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      submitHandler();
-    }
-  };
-  //for creating one to one chat
-  const accessChat = async (id) => {
-    console.log(id);
 
+  const handleAccessChat = async (id) => {
     try {
       setLoadingChat(true);
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-      const { data } = await axios.post(`https://chatbuddy-4.onrender.com/api/chat`, { userId: id }, config);
-      console.log(data);
-      if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
+      const { data } = await axios.post(
+        `${PORT}/api/chat`,
+        { userId: id },
+        {
+          headers: { Authorization: `Bearer ${user.auhToken}` },
+        }
+      );
+
+      if (!chats.some((chat) => chat._id === data._id)) {
+        setChats([data, ...chats]);
+      }
       setSelectedChat(data);
-      setLoadingChat(false);
       onClose();
     } catch (error) {
       toast({
-        title: "Error fetching the chat",
+        title: "Error fetching chat",
         description: error.message,
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom-left",
       });
+    } finally {
+      setLoadingChat(false);
     }
   };
+
   useEffect(() => {
-    if (!search) SetsearchResults([]);
+    if (!search) setResults([]);
   }, [search]);
+
   return (
     <>
-      <Tooltip bg="gray.300" hasArrow label="Search User" color="black">
+      <Tooltip label="Search User" hasArrow bg="gray.300" color="black">
         <Button
-          bg={theme ? "#181818" : null}
-          color={theme ? "gray.300" : "black"}
-          // minW="20vw"
-          gap="0.7rem"
           ref={btnRef}
           onClick={onOpen}
+          gap="0.7rem"
+          bg={theme ? "#181818" : undefined}
+          color={theme ? "gray.300" : "black"}
         >
           <SearchIcon />
           <Text>Search User</Text>
         </Button>
       </Tooltip>
-      <Drawer
-        isOpen={isOpen}
-        placement="left"
-        onClose={onClose}
-        finalFocusRef={btnRef}
-        bg="black"
-      >
+
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose} finalFocusRef={btnRef}>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>Search Users</DrawerHeader>
+
           <DrawerBody>
-            <Box>
-              <Input
-                mb="1rem"
-                type="search"
-                placeholder="Search here..."
-                value={search}
-                onChange={(e) => Setsearch(e.target.value)}
-                onKeyUp={handleKeyPress}
-              />
-            </Box>
+            <Input
+              mb="1rem"
+              type="search"
+              placeholder="Search here..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyUp={(e) => e.key === "Enter" && handleSearch()}
+            />
+
             <Stack spacing={2}>
               {loading ? (
-                <Stack>
-                  <Skeleton height="45px" />
-                  <Skeleton height="45px" />
-                  <Skeleton height="45px" />
-                  <Skeleton height="45px" />
-                  <Skeleton height="45px" />
-                  <Skeleton height="45px" />
-                </Stack>
+                [...Array(6)].map((_, i) => <Skeleton key={i} height="45px" />)
               ) : (
-                searchResults?.slice(0, 9).map((User, i) => {
-                  return (
-                    <UserListItem
-                      key={i}
-                      User={User}
-                      handleFunction={() => accessChat(User._id)}
-                    />
-                  );
-                })
+                results.slice(0, 9).map((u) => (
+                  <UserListItem
+                    key={u._id}
+                    User={u}
+                    handleFunction={() => handleAccessChat(u._id)}
+                  />
+                ))
               )}
             </Stack>
           </DrawerBody>
@@ -171,13 +154,13 @@ const SearchDrawer = () => {
               variant="outline"
               mr={3}
               onClick={() => {
-                SetsearchResults([]);
-                Setsearch("");
+                setSearch("");
+                setResults([]);
               }}
             >
               Clear
             </Button>
-            <Button colorScheme="blue" onClick={submitHandler}>
+            <Button colorScheme="blue" onClick={handleSearch} isLoading={loadingChat}>
               Search
             </Button>
           </DrawerFooter>

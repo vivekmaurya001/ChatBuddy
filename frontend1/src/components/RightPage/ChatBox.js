@@ -68,25 +68,24 @@ const ChatBox = ({ fetchAgain, setFetchAgain, switchTab, setSwitchTab }) => {
             )}
             <Flex gap="0.6rem">
               {!selectedChat.isGroupChat ? (
-                <Image
+                <Avatar
                   mb="4px"
-                  borderRadius="full"
-                  boxSize="55px"
+                  size="md"
+                  name={getsender1(user.user, selectedChat.users).name}
                   src={getsender1(user.user, selectedChat.users).pic}
-                  alt="Dan Abramov"
                 />
               ) : (
                 <AvatarGroup size="sm" max={3}>
                   <Avatar
-                    name="Ryan Florence"
+                    name=""
                     src={selectedChat.users[0].pic}
                   />
                   <Avatar
-                    name="Segun Adebayo"
+                    name=""
                     src={selectedChat.users[1].pic}
                   />
                   <Avatar
-                    name="Prosper Otemuyiwa"
+                    name=""
                     src={selectedChat.users[2].pic}
                   />
                 </AvatarGroup>

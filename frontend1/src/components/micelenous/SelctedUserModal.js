@@ -29,6 +29,8 @@ import {
 import { ViewIcon } from "@chakra-ui/icons";
 import axios from "axios";
 
+const PORT = process.env.REACT_APP_BACKEND_URL;
+
 const SelctedUserModal = ({ fetchAgain, setFetchAgain }) => {
   const { user, selectedChat } = ChatState();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -59,7 +61,7 @@ const SelctedUserModal = ({ fetchAgain, setFetchAgain }) => {
       };
 
       const { data } = await axios.delete(
-        `https://chatbuddy-4.onrender.com/api/chat`,
+        `${PORT}/api/chat`,
         {
           data: { ChatId: selectedChat._id },
         },

@@ -1,341 +1,178 @@
 import React, { useState, useEffect } from "react";
-import { ChatState } from "../../Context/ChatProvider";
 import {
-  Modal,
-  ModalOverlay,
-  InputRightElement,
-  InputGroup,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  FormControl,
-  FormLabel,
-  Input,
-  Button,
-  useDisclosure,
-  Spinner,
-  Tag,
-  TagLabel,
-  TagCloseButton,
-  Box,
-  Stack,
-  Flex,
-  useToast,
+  Modal, ModalOverlay, InputRightElement, InputGroup,
+  ModalContent, ModalHeader, ModalFooter, ModalBody,
+  ModalCloseButton, FormControl, FormLabel, Input,
+  Button, useDisclosure, Spinner, Tag, TagLabel,
+  TagCloseButton, Box, Stack, Flex, useToast,
 } from "@chakra-ui/react";
-import axios from "axios";
 import { ViewIcon } from "@chakra-ui/icons";
+import axios from "axios";
+import { ChatState } from "../../Context/ChatProvider";
 import UserListItem from "../UserListItem";
+
+const PORT = process.env.REACT_APP_BACKEND_URL;
 
 const UpdateGroupModal = ({ fetchAgain, setFetchAgain }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { user, selectedChat, setSelectedChat } = ChatState();
-  const [search, Setsearch] = useState("");
-  const [searchResults, SetsearchResults] = useState([]);
-  const [newName, setnewname] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
-  //for searching a user in db through a keyword in email or name
-  const submitHandler = async () => {
-    if (!search) {
-      toast({
-        title: "Please enter Something in search",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top-left",
-      });
-      return;
-    }
+  const config = {
+    headers: { Authorization: `Bearer ${user?.auhToken}` },
+  };
+
+  const showToast = (title, status = "info", desc = "") => {
+    toast({
+      title, description: desc, status, duration: 2000, isClosable: true, position: "bottom"
+    });
+  };
+
+  const handleSearch = async () => {
+    if (!search) return showToast("Please enter something to search", "error");
     try {
       setLoading(true);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-
-      const { data } = await axios.get(`https://chatbuddy-4.onrender.com/api/user?search=${search}`, config);
-      setLoading(false);
-      SetsearchResults(data);
-    } catch (error) {
-      toast({
-        title: "Error Occured!",
-        description: "Failed to Load the Search Results",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom-left",
-      });
+      const { data } = await axios.get(`${PORT}/api/user?search=${search}`, config);
+      setSearchResults(data);
+    } catch (err) {
+      showToast("Search failed", "error", err.response?.data || "Try again");
+    } finally {
       setLoading(false);
     }
   };
-  //for running submitHandler through Enter
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      submitHandler();
-    }
-  };
-  //fxn to update new function
+
   const updateName = async () => {
-    if (!newName) {
-      toast({
-        title: "Please enter Something in name",
-        status: "error",
-        duration: 2000,
-        position: "bottom-right",
-      });
-      return;
-    }
-
+    if (!newName) return showToast("Enter a new name", "error");
     try {
       setLoading(true);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-      const { data } = await axios.put(
-        `https://chatbuddy-4.onrender.com/api/chat/rename`,
-        {
-          chatId: selectedChat._id,
-          chatName: newName,
-        },
-        config
-      );
+      const { data } = await axios.put(`${PORT}/api/chat/rename`, {
+        chatId: selectedChat._id,
+        chatName: newName
+      }, config);
       setSelectedChat(data);
-      setLoading(false);
       setFetchAgain(!fetchAgain);
       onClose();
-      toast({
-        title: "name updates succesfully",
-        status: "success",
-        duration: 2000,
-        position: "bottom",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to update the name!",
-        description: error.response.data,
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
+      showToast("Group name updated", "success");
+    } catch (err) {
+      showToast("Update failed", "error", err.response?.data);
+    } finally {
       setLoading(false);
     }
   };
-  const addToGroup = async (UserID) => {
-    if (selectedChat.users.find((u) => u._id === UserID)) {
-      toast({
-        title: "User Already in group!",
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
-      return;
-    }
 
-    if (selectedChat.groupAdmin._id !== user.user._id) {
-      toast({
-        title: "Only admins can add someone!",
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
-      return;
-    }
+  const addToGroup = async (userId) => {
+    if (selectedChat.users.some((u) => u._id === userId))
+      return showToast("User already in group", "error");
+
+    if (selectedChat.groupAdmin._id !== user.user._id)
+      return showToast("Only admins can add users", "error");
 
     try {
       setLoading(true);
-
-      const config2 = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-      const { newdata1 } = await axios.put(
-        `https://chatbuddy-4.onrender.com/api/chat/groupadd`,
-        {
-          chatId: selectedChat._id,
-          userId: UserID,
-        },
-        config2
-      );
+      const { data } = await axios.put(`${PORT}/api/chat/groupadd`, {
+        chatId: selectedChat._id, userId
+      }, config);
+      setSelectedChat(data);
       setFetchAgain(!fetchAgain);
-      setSelectedChat(newdata1);
       onClose();
-      setLoading(false);
-      toast({
-        title: "added member succesfully",
-        status: "success",
-        duration: 2000,
-        position: "bottom",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to add memeber!",
-        description: error.response.data,
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
+      showToast("User added", "success");
+    } catch (err) {
+      showToast("Failed to add member", "error", err.response?.data);
+    } finally {
       setLoading(false);
     }
   };
-  //api request not going to server sending undefined data but on refreshing user is deleted
-  const removefxn = async (UserID) => {
-    console.log("removing this", UserID);
-    console.log("chat id", selectedChat._id);
+
+  const removeUser = async (userId) => {
+    if (user.user._id !== selectedChat.groupAdmin._id && user.user._id !== userId)
+      return showToast("Only admins can remove users", "error");
+
     try {
       setLoading(true);
-
-      const config1 = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-      const { newdata } = await axios.put(
-        `https://chatbuddy-4.onrender.com/api/chat/groupremove`,
-        {
-          chatId: selectedChat._id,
-          userId: UserID,
-        },
-        config1
-      );
-      console.log(newdata);
+      const { data } = await axios.put(`${PORT}/api/chat/groupremove`, {
+        chatId: selectedChat._id,
+        userId
+      }, config);
+      userId === user.user._id ? setSelectedChat() : setSelectedChat(data);
       setFetchAgain(!fetchAgain);
-      UserID === user.user._id ? setSelectedChat() : setSelectedChat(newdata);
       onClose();
-      setLoading(false);
-      toast({
-        title: "deleted member succesfully",
-        status: "success",
-        duration: 2000,
-        position: "bottom",
-      });
-      return;
-    } catch (error) {
-      toast({
-        title: "Failed to delete memeber!",
-        description: error.response.data,
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
+      showToast(userId === user.user._id ? "Left group" : "User removed", "success");
+    } catch (err) {
+      showToast("Failed to remove user", "error", err.response?.data);
+    } finally {
       setLoading(false);
     }
   };
-  const removemember = (UserId) => {
-    if (user.user._id === selectedChat.groupAdmin._id) {
-      removefxn(UserId);
-    } else {
-      toast({
-        title: "Permission denied",
-        description: "only admins can remove memebers",
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
-    }
-  };
+
   useEffect(() => {
-    if (!search) SetsearchResults([]);
+    if (!search) setSearchResults([]);
   }, [search]);
+
   return (
     <>
-      <Button
-        isDisabled={selectedChat ? !selectedChat.isGroupChat : true}
-        onClick={onOpen}
-      >
+      <Button onClick={onOpen} isDisabled={!selectedChat?.isGroupChat}>
         <ViewIcon />
       </Button>
       {selectedChat && (
         <Modal isOpen={isOpen} onClose={onClose}>
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader fontSize="35px" display="flex" justifyContent="center">
-              {selectedChat.chatName}
-            </ModalHeader>
+            <ModalHeader textAlign="center">{selectedChat.chatName}</ModalHeader>
             <ModalCloseButton />
-            <ModalBody pb={6}>
+            <ModalBody>
               <Box>
-                {selectedChat.users.map((User, i) => {
-                  return (
-                    <Tag
-                      key={i}
-                      size="lg"
-                      variant="solid"
-                      colorScheme="purple"
-                      mb="6px"
-                      mr="1rem"
-                    >
-                      <TagLabel>{User.name}</TagLabel>
-                      <TagCloseButton onClick={() => removemember(User._id)} />
-                    </Tag>
-                  );
-                })}
+                {selectedChat.users.map((u) => (
+                  <Tag key={u._id} size="lg" colorScheme="purple" mr="1rem" mb="6px">
+                    <TagLabel>{u.name}</TagLabel>
+                    <TagCloseButton onClick={() => removeUser(u._id)} />
+                  </Tag>
+                ))}
               </Box>
-
-              <Stack>
+              <Stack spacing={4} mt={4}>
                 <FormControl>
-                  <FormLabel>Update Name</FormLabel>
+                  <FormLabel>Rename Group</FormLabel>
                   <Flex gap="1rem">
                     <Input
-                      placeholder="Enter the new name..."
                       value={newName}
-                      onChange={(e) => setnewname(e.target.value)}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Enter new group name"
                     />
-                    <Button colorScheme="blue" onClick={() => updateName()}>
-                      {loading ? <Spinner /> : "Update"}{" "}
+                    <Button onClick={updateName} colorScheme="blue">
+                      {loading ? <Spinner size="sm" /> : "Update"}
                     </Button>
                   </Flex>
                 </FormControl>
-
-                <FormControl mt={4}>
-                  <FormLabel>Add members</FormLabel>
+                <FormControl>
+                  <FormLabel>Add Users</FormLabel>
                   <InputGroup>
                     <Input
-                      type="search"
-                      placeholder="Choose memebers...."
+                      placeholder="Search users..."
                       value={search}
-                      onChange={(e) => Setsearch(e.target.value)}
-                      onKeyUp={handleKeyPress}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     />
                     <InputRightElement width="4.5rem">
-                      <Button h="1.75rem" size="sm" onClick={submitHandler}>
-                        Search
-                      </Button>
+                      <Button size="sm" onClick={handleSearch}>Search</Button>
                     </InputRightElement>
                   </InputGroup>
                 </FormControl>
-              </Stack>
-
-              <Stack mt="1rem">
-                {loading ? (
-                  <Spinner />
-                ) : (
-                  searchResults?.slice(0, 3).map((User, i) => {
-                    return (
-                      <UserListItem
-                        key={i}
-                        User={User}
-                        handleFunction={() => addToGroup(User._id)}
-                      />
-                    );
-                  })
+                {loading ? <Spinner /> : (
+                  searchResults.slice(0, 3).map((u) => (
+                    <UserListItem
+                      key={u._id}
+                      User={u}
+                      handleFunction={() => addToGroup(u._id)}
+                    />
+                  ))
                 )}
               </Stack>
             </ModalBody>
             <ModalFooter>
-              <Button
-                colorScheme="red"
-                alignSelf="end"
-                onClick={() => removefxn(user.user._id)}
-              >
+              <Button colorScheme="red" onClick={() => removeUser(user.user._id)}>
                 Leave Group
               </Button>
             </ModalFooter>

@@ -5,7 +5,6 @@ import {
   Button,
   Stack,
   Modal,
-  useToast,
   ModalOverlay,
   ModalContent,
   ModalHeader,
@@ -20,233 +19,218 @@ import {
   TagCloseButton,
   InputRightElement,
   InputGroup,
+  useToast,
 } from "@chakra-ui/react";
-import { AddIcon, CalendarIcon } from "@chakra-ui/icons";
+import { AddIcon } from "@chakra-ui/icons";
 import { useDisclosure } from "@chakra-ui/hooks";
 import { ChatState } from "../../Context/ChatProvider";
 import axios from "axios";
 import UserListItem from "../UserListItem";
 
+const PORT = process.env.REACT_APP_BACKEND_URL;
+
 const GroupChatModal = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [groupname, setGroupname] = useState("");
+  const [groupName, setGroupName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [search, Setsearch] = useState("");
-  const [searchResults, SetsearchResults] = useState([]);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { user, chats, setChats, selectedChat, setSelectedChat, theme } =
-    ChatState();
+  const { user, chats, setChats, setSelectedChat } = ChatState();
   const toast = useToast();
 
-  //for searching a user in db through a keyword in email or name
-  const submitHandler = async () => {
+  // Fetch users based on search
+  const handleSearch = async () => {
     if (!search) {
-      toast({
-        title: "Please enter Something in search",
+      return toast({
+        title: "Enter something to search",
         status: "error",
         duration: 3000,
         isClosable: true,
         position: "top-left",
       });
-      return;
     }
+
     try {
       setLoading(true);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-
-      const { data } = await axios.get(`https://chatbuddy-4.onrender.com/api/user?search=${search}`, config);
-      setLoading(false);
-      SetsearchResults(data);
-    } catch (error) {
+      const { data } = await axios.get(
+        `${PORT}/api/user?search=${search}`,
+        { headers: { Authorization: `Bearer ${user.auhToken}` } }
+      );
+      setSearchResults(data);
+    } catch {
       toast({
-        title: "Error Occured!",
-        description: "Failed to Load the Search Results",
+        title: "Search failed",
+        description: "Unable to fetch users",
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom-left",
       });
+    } finally {
       setLoading(false);
     }
   };
-  //for running submitHandler through Enter
+
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      submitHandler();
-    }
+    if (e.key === "Enter") handleSearch();
   };
-  //fxn for adding selsted members in array
-  const addFxn = async (UsertoAdd) => {
-    // Check if the member already exists
-    const addedmember = selectedUsers.some((User) => User === UsertoAdd);
-    if (!addedmember) {
-      // Add the new member to the array
-      setSelectedUsers([UsertoAdd, ...selectedUsers]);
-    } else {
+
+  const handleAddUser = (userToAdd) => {
+    if (selectedUsers.some((u) => u._id === userToAdd._id)) {
       toast({
-        title: "member already added",
+        title: "User already added",
         status: "error",
         duration: 2000,
         position: "bottom-right",
       });
+      return;
     }
+    setSelectedUsers((prev) => [userToAdd, ...prev]);
   };
-  const removefxn = async (User) => {
-    setSelectedUsers((selectedUsers) =>
-      selectedUsers.filter((item) => item !== User)
-    );
+
+  const handleRemoveUser = (userToRemove) => {
+    setSelectedUsers((prev) => prev.filter((u) => u._id !== userToRemove._id));
   };
+
   const createGroup = async () => {
-    if (selectedUsers.length < 2 || !groupname) {
-      toast({
-        title: "Error Occured!",
-        description: "Select Atlest two members and enter group name",
+    if (!groupName || selectedUsers.length < 2) {
+      return toast({
+        title: "Incomplete data",
+        description: "Provide group name and at least 2 users",
         status: "error",
         duration: 2000,
         position: "bottom-left",
       });
-      return;
     }
+
     try {
       setLoading(true);
-      SetsearchResults([]);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
       const { data } = await axios.post(
-        `https://chatbuddy-4.onrender.com/api/chat/group`,
+        `${PORT}/api/chat/group`,
         {
-          name: groupname,
+          name: groupName,
           users: JSON.stringify(selectedUsers.map((u) => u._id)),
         },
-        config
+        { headers: { Authorization: `Bearer ${user.auhToken}` } }
       );
-      setChats([data, ...chats]);
+
+      setChats((prev) => [data, ...prev]);
       setSelectedChat(data);
-      setLoading(false);
-      onClose();
-      setSelectedUsers([]);
       toast({
-        title: "New Group Chat Created!",
+        title: "Group created",
         status: "success",
         duration: 5000,
         isClosable: true,
         position: "bottom",
       });
+
+      onClose();
+      setGroupName("");
+      setSelectedUsers([]);
+      setSearchResults([]);
     } catch (error) {
       toast({
-        title: "Failed to Create the Chat!",
-        description: error.response.data,
+        title: "Creation failed",
+        description: error?.response?.data || "Server error",
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom",
       });
+    } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-    if (!search) SetsearchResults([]);
+    if (!search) setSearchResults([]);
   }, [search]);
+
   return (
     <>
       <Button
         h="50px"
         bg="transparent"
-        _hover={{ bg: "#90e0ef", color: "black" }}
         w="100%"
         fontSize="20px"
         gap="1rem"
-        display={"flex"}
-        justifyContent={"flex-start"}
+        justifyContent="flex-start"
         onClick={onOpen}
+        _hover={{ bg: "#90e0ef", color: "black" }}
+        leftIcon={<AddIcon />}
       >
-        <i class="fas fa-users"></i>
         Create Group
       </Button>
+
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Create Group Chat</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Stack mb="1rem" spacing={3}>
+            <Stack spacing={4} mb={4}>
               <Box>
-                <FormLabel>Group name</FormLabel>
+                <FormLabel>Group Name</FormLabel>
                 <Input
-                  type="text"
-                  placeholder="Enter the group name..."
-                  value={groupname}
-                  onChange={(e) => setGroupname(e.target.value)}
+                  placeholder="Enter group name..."
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
                 />
               </Box>
               <Box>
-                <FormLabel>Search users</FormLabel>
+                <FormLabel>Search Users</FormLabel>
                 <InputGroup>
                   <Input
-                    type="search"
-                    placeholder="Choose memebers...."
+                    placeholder="Search members..."
                     value={search}
-                    onChange={(e) => Setsearch(e.target.value)}
+                    onChange={(e) => setSearch(e.target.value)}
                     onKeyUp={handleKeyPress}
                   />
                   <InputRightElement width="4.5rem">
-                    <Button h="1.75rem" size="sm" onClick={submitHandler}>
+                    <Button h="1.75rem" size="sm" onClick={handleSearch}>
                       Search
                     </Button>
                   </InputRightElement>
                 </InputGroup>
               </Box>
             </Stack>
-            <Box>
-              {selectedUsers.map((User, i) => {
-                return (
-                  <Tag
-                    key={i}
-                    size="lg"
-                    variant="solid"
-                    colorScheme="purple"
-                    mb="6px"
-                    mr="1rem"
-                  >
-                    <TagLabel>{User.name}</TagLabel>
-                    <TagCloseButton onClick={() => removefxn(User)} />
-                  </Tag>
-                );
-              })}
+
+            {/* Selected Users */}
+            <Box mb={4}>
+              {selectedUsers.map((user) => (
+                <Tag
+                  key={user._id}
+                  size="lg"
+                  colorScheme="purple"
+                  variant="solid"
+                  mr={2}
+                  mb={2}
+                >
+                  <TagLabel>{user.name}</TagLabel>
+                  <TagCloseButton onClick={() => handleRemoveUser(user)} />
+                </Tag>
+              ))}
             </Box>
+
+            {/* Search Results */}
             <Stack spacing={2}>
               {loading ? (
                 <Spinner />
               ) : (
-                searchResults?.slice(0, 3).map((User, i) => {
-                  return (
-                    <UserListItem
-                      key={i}
-                      User={User}
-                      handleFunction={() => addFxn(User)}
-                    />
-                  );
-                })
+                searchResults.slice(0, 3).map((user) => (
+                  <UserListItem
+                    key={user._id}
+                    User={user}
+                    handleFunction={() => handleAddUser(user)}
+                  />
+                ))
               )}
             </Stack>
           </ModalBody>
+
           <ModalFooter>
-            <Button
-              colorScheme="blue"
-              mr={3}
-              onClick={() => {
-                createGroup();
-              }}
-            >
+            <Button colorScheme="blue" onClick={createGroup}>
               Create Chat
             </Button>
           </ModalFooter>

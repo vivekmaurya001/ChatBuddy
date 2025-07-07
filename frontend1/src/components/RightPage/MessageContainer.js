@@ -1,271 +1,169 @@
 import React, { useEffect, useState, useRef } from "react";
 import ScrollableFeed from "react-scrollable-feed";
 import {
+  Box,
   Button,
-  FormControl,
-  useToast,
   Input,
   Spinner,
   InputGroup,
-  Box,
   InputRightElement,
+  useToast,
 } from "@chakra-ui/react";
 import { ChatState } from "../../Context/ChatProvider";
 import axios from "axios";
-import MessageItem from "./MessageItem";
 import io from "socket.io-client";
 import Lottie from "react-lottie";
 import animationData from "../animation/Animation.json";
-const ENDPOINT = "https://chatbuddy-4.onrender.com";
+import MessageItem from "./MessageItem";
 
-var socket, selectedChatCompare;
+const ENDPOINT = process.env.REACT_APP_BACKEND_URL;
+let socket, selectedChatIdCompare;
 
 const MessageContainer = ({ fetchAgain, setFetchAgain }) => {
-  const [messages, setMessages] = useState([]);
-  const [image, setImage] = useState("");
-  const [newmessage, setnewMessage] = useState("");
-  const [loading, setloading] = useState(false);
-  const { user, selectedChat, Notification, setNotification } = ChatState();
   const toast = useToast();
-  const [socketConnected, setsocketConnected] = useState(false);
-  const [Typing, setTyping] = useState(false);
-  const [IsTyping, setIsTyping] = useState(false);
+  const { user, selectedChat, Notification, setNotification } = ChatState();
 
-  const hiddenFileInput = useRef(null);
-  const handleClick = () => {
-    hiddenFileInput.current.click();
-  };
+  const [state, setState] = useState({
+    messages: [],
+    text: "",
+    imgData: "",
+    loading: false,
+    socketConnected: false,
+    isTyping: false
+  });
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    setFileTobase(file);
-    console.log(file);
-  };
-  const setFileTobase = (file) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onloadend = () => {
-      setImage(reader.result);
-    };
-  };
+  const hiddenFileInput = useRef();
 
-  const defaultOptions = {
+  const defaultLottie = {
     loop: true,
     autoplay: true,
-    animationData: animationData,
-    rendererSettings: {
-      preserveAspectRatio: "xMidYMid slice",
-    },
+    animationData,
+    rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
   };
 
   useEffect(() => {
     socket = io(ENDPOINT);
     socket.emit("setup", user.user);
-    socket.on("connected", () => setsocketConnected(true));
-    socket.on("typing", () => setIsTyping(true));
-    socket.on("stop-typing", () => setIsTyping(false));
+    socket.on("connected", () => setState(s => ({ ...s, socketConnected: true })));
+    socket.on("typing", () => setState(s => ({ ...s, isTyping: true })));
+    socket.on("stop-typing", () => setState(s => ({ ...s, isTyping: false })));
+    socket.on("message received", handleIncomingMessage);
+    return () => socket.disconnect();
   }, []);
 
-  const fetchMessages = async () => {
-    if (!selectedChat) return;
-
-    try {
-      setloading(true);
-
-      const config1 = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-      const { data } = await axios.get(
-        `https://chatbuddy-4.onrender.com/api/message/${selectedChat._id}`,
-        config1
-      );
-
-      setMessages(data);
-      console.log(data);
-      setnewMessage("");
-      setloading(false);
-      socket.emit("join chat", selectedChat._id);
-    } catch (error) {
-      toast({
-        title: "Error occured!",
-        description: "failed to load all chats",
-        status: "error",
-        duration: 2000,
-        position: "bottom",
-      });
-      setloading(false);
-    }
-  };
-
-  const SendMessage = async () => {
-    if (newmessage) {
-      socket.emit("stop-typing", selectedChat._id);
-
-      try {
-        const config = {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user.auhToken}`,
-          },
-        };
-        const { data } = await axios.post(
-          `https://chatbuddy-4.onrender.com/api/message`,
-          {
-            chatId: selectedChat._id,
-            content: newmessage,
-            image: image,
-          },
-          config
-        );
-        setMessages([...messages, data]);
-        setnewMessage("");
-        setImage("");
-        socket.emit("new message", data);
-      } catch (error) {
-        toast({
-          title: "Failed to send the message!",
-          description: error.response.data,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-          position: "bottom",
-        });
-      }
-    }
-  };
-
   useEffect(() => {
-    fetchMessages();
-    selectedChatCompare = selectedChat;
+    if (selectedChat) {
+      fetchMessages();
+      selectedChatIdCompare = selectedChat._id;
+    }
   }, [selectedChat]);
 
-  useEffect(() => {
-    socket.on("message received", (newMessageReceived) => {
-      //chking that if no chat is selcted and selected chat and newmessage of a chat are not same then we show notifications
-      if (
-        !selectedChatCompare ||
-        selectedChatCompare._id !== newMessageReceived.Chat._id
-      ) {
-        //showing notification
-        if (!Notification.includes(newMessageReceived)) {
-          newMessageReceived.senderName = user.user.name;
-          setNotification([newMessageReceived, ...Notification]);
-          setFetchAgain(!fetchAgain);
-        }
-      } else {
-        setMessages([...messages, newMessageReceived]);
+  async function fetchMessages() {
+    setState(s => ({ ...s, loading: true }));
+    try {
+      const { data } = await axios.get(
+        `${ENDPOINT}/api/message/${selectedChat._id}`,
+        { headers: { Authorization: `Bearer ${user.auhToken}` } }
+      );
+      setState(s => ({ ...s, messages: data, text: "", loading: false }));
+      socket.emit("join chat", selectedChat._id);
+    } catch {
+      toast({ title: "Error loading messages", status: "error", duration: 2000, position: "bottom" });
+      setState(s => ({ ...s, loading: false }));
+    }
+  }
+
+  function handleIncomingMessage(newMsg) {
+    if (!selectedChatIdCompare || selectedChatIdCompare !== newMsg.Chat._id) {
+      if (!Notification.some(n => n._id === newMsg._id)) {
+        setNotification([newMsg, ...Notification]);
+        setFetchAgain(!fetchAgain);
       }
-    });
-  });
+    } else {
+      setState(s => ({ ...s, messages: [...s.messages, newMsg] }));
+    }
+  }
 
-  const typingHandler = (e) => {
-    setnewMessage(e.target.value);
+  function handleTyping(e) {
+    const text = e.target.value;
+    setState(s => ({ ...s, text }));
+    if (!state.socketConnected) return;
 
-    if (!socketConnected) return;
-
-    if (!Typing) {
-      setTyping(true);
+    if (!state.isTyping) {
       socket.emit("typing", selectedChat._id);
+      setState(s => ({ ...s, isTyping: true }));
     }
-    let lastTypingTime = new Date().getTime();
-    var timerLength = 3000;
-    setTimeout(() => {
-      var timeNow = new Date().getTime();
-      var timeDiff = timeNow - lastTypingTime;
-      if (timeDiff >= timerLength && Typing) {
-        socket.emit("stop-typing", selectedChat._id);
-        setTyping(false);
-      }
-    }, timerLength);
-  };
-  //for running submitHandler through Enter
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      SendMessage();
+    debounceStopTyping();
+  }
+
+  let typingTimeout;
+  function debounceStopTyping() {
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      socket.emit("stop-typing", selectedChat._id);
+      setState(s => ({ ...s, isTyping: false }));
+    }, 3000);
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter") sendMessage();
+  }
+
+  async function sendMessage() {
+    const { text, imgData } = state;
+    if (!text) return;
+
+    socket.emit("stop-typing", selectedChat._id);
+    try {
+      const { data } = await axios.post(
+        `${ENDPOINT}/api/message`,
+        { chatId: selectedChat._id, content: text, image: imgData },
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.auhToken}` } }
+      );
+      setState(s => ({ ...s, messages: [...s.messages, data], text: "", imgData: "" }));
+      socket.emit("new message", data);
+    } catch (error) {
+      toast({ title: "Send failed", description: error.response?.data, status: "error", duration: 5000, position: "bottom" });
     }
-  };
+  }
+
+  function handleImageSelection(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => setState(s => ({ ...s, imgData: reader.result }));
+    reader.readAsDataURL(file);
+  }
+
+  function triggerFilePicker() {
+    hiddenFileInput.current.click();
+  }
+
+  const { messages, loading, isTyping, text } = state;
 
   return (
     <>
-      <Box overflowY="scroll" p="1rem" pt="5rem" mb="12vh">
-        <ScrollableFeed className="my-scrollable-feed">
-          {loading ? (
-            <Spinner alignSelf="Center" size="xl" />
-          ) : (
-            <MessageItem messages={messages} />
-          )}
-          {IsTyping ? (
-            <div
-              style={{
-                marginBottom: 15,
-                marginLeft: 0,
-                width: "70px",
-              }}
-            >
-              {" "}
-              <Lottie options={defaultOptions} width={70} /> Typing....
-            </div>
-          ) : null}
+      <Box p="1rem" pt="5rem" mb="12vh" overflowY="auto">
+        <ScrollableFeed>
+          {loading ? <Spinner size="xl" alignSelf="center" /> : <MessageItem messages={messages} />}
+          {isTyping && <Box mb="15px"><Lottie options={defaultLottie} width={70} />Typing...</Box>}
         </ScrollableFeed>
       </Box>
-      <Box
-        w="100%"
-        h="100px"
-        bgColor="transparent"
-        gap="1rem"
-        display="flex"
-        justifyContent="center"
-        position={"absolute"}
-        bottom={0}
-      >
-        <InputGroup w="60%" h="100%" mt="1rem" gap="1rem" display="flex">
+
+      <Box position="absolute" bottom={0} display="flex" w="100%" gap={2} p={4} bg="white">
+        <InputGroup flex="1">
           <Input
-            w="100%"
-            h="60%"
-            bgColor="#edede9"
-            type="text"
-            placeholder="Enter the message......."
-            value={newmessage}
-            onChange={typingHandler}
-            onKeyDown={handleKeyPress}
+            value={text}
+            placeholder="Enter message..."
+            onChange={handleTyping}
+            onKeyDown={handleKeyDown}
+            bg="#edede9"
           />
-          <InputRightElement width="4.5rem" alignSelf="center" h="60%">
-            <Button
-              h="3rem"
-              w="3rem"
-              bgColor={"transparent"}
-              borderRadius="50%"
-              onClick={handleClick}
-            >
-              <i style={{ fontSize: "30px" }} class="fas fa-paperclip"></i>
-            </Button>
-            <Input
-              ref={hiddenFileInput}
-              accept="image/*"
-              onChange={handleImage}
-              type="file"
-              hidden
-            />
+          <InputRightElement width="4.5rem">
+            <Button size="sm" onClick={triggerFilePicker}>📎</Button>
+            <Input type="file" hidden ref={hiddenFileInput} accept="image/*" onChange={handleImageSelection} />
           </InputRightElement>
         </InputGroup>
-        <Button
-          h="3.5rem"
-          alignSelf={"center"}
-          _hover={{ bg: "#48cae4" }}
-          bgColor="#0096c7"
-          display={"flex"}
-          gap={"1rem"}
-          color={"white"}
-          fontSize={"20px"}
-          onClick={() => {
-            SendMessage();
-          }}
-        >
-          <i style={{ color: "white" }} class="fas fa-paper-plane"></i>
-          send
-        </Button>
+        <Button colorScheme="blue" onClick={sendMessage}>Send</Button>
       </Box>
     </>
   );

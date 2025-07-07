@@ -18,6 +18,8 @@ import {
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import axios from "axios";
 
+const PORT = process.env.REACT_APP_BACKEND_URL;
+
 const Updateprofile = ({ setClicked }) => {
   const { user, setUser } = ChatState();
   const [name, setName] = useState("");
@@ -77,7 +79,7 @@ const Updateprofile = ({ setClicked }) => {
         payload.pic = image;
       }
 
-      const { data } = await axios.put("https://chatbuddy-4.onrender.com/api/user/update", payload, config);
+      const { data } = await axios.put(`${PORT}/api/user/update`, payload, config);
 
       console.log(data);
       const Updateduser = user;

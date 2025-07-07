@@ -8,42 +8,48 @@ import {
   Stack,
   InputRightElement,
   InputGroup,
+  useToast,
 } from "@chakra-ui/react";
-import { useToast } from "@chakra-ui/react";
 import axios from "axios";
+
+import { ChatState } from "../../Context/ChatProvider";
 import { useNavigate } from "react-router-dom";
 
+const PORT = process.env.REACT_APP_BACKEND_URL;
+
 const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [Name, setName] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    image: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
-  const [password, setPassword] = useState("");
-  const [Image, setImage] = useState("");
-  const [confirmpassword, setconfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { setUser } = ChatState();
+
+
   const toast = useToast();
   const navigate = useNavigate();
-  const handleTogglePassword = () => setShowPassword(!showPassword);
 
-  const postDetails = () => {};
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleImage = (e) => {
     const file = e.target.files[0];
-    setFileTobase(file);
-    console.log(file);
-  };
-  const setFileTobase = (file) => {
     const reader = new FileReader();
+    reader.onloadend = () => setForm({ ...form, image: reader.result });
     reader.readAsDataURL(file);
-    reader.onloadend = () => {
-      setImage(reader.result);
-    };
   };
-  const submitHandler = async () => {
+
+  const handleSubmit = async () => {
+    const { name, email, password, confirmPassword, image } = form;
+
     setLoading(true);
-    if (!Name || !email || !password || !confirmpassword) {
+    if (!name || !email || !password || !confirmPassword) {
       toast({
-        title: "Please fill Out all the Feilds",
+        title: "Please fill out all the fields.",
         status: "warning",
         duration: 5000,
         isClosable: true,
@@ -51,9 +57,10 @@ const Signup = () => {
       setLoading(false);
       return;
     }
-    if (password != confirmpassword) {
+
+    if (password !== confirmPassword) {
       toast({
-        title: "password and confirmpassword should be same",
+        title: "Passwords do not match.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -61,48 +68,23 @@ const Signup = () => {
       setLoading(false);
       return;
     }
+
     try {
-      //     fetch(`http://localhost:5000/api/user`)
-      // const response = await fetch(`http://localhost:5000/api/user`,{
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     name:Name,email:email,password:password
-      //   }),
-      // });
-      // const json = await response.json();
+      const { data } = await axios.post(
+        `${PORT}/api/user`,
+        { name, email, password, pic: image },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      };
-      let payload = {
-        email: email,
-        password: password,
-        name: Name,
-      };
-
-      if (Image) {
-        payload.pic = Image;
-      }
-      console.log(payload);
-      const { data } = await axios.post(`https://chatbuddy-4.onrender.com/api/user`, payload, config);
-
-      console.log(data);
       if (data.success) {
-        //redirect
         localStorage.setItem("userinfo", JSON.stringify(data));
+        setUser(data);
         toast({
-          title: "Account created.",
-          description: "Account created sucessfully",
+          title: "Account created successfully.",
           status: "success",
           duration: 4000,
           isClosable: true,
         });
-        setLoading(false);
         navigate("/chats");
       } else {
         toast({
@@ -111,96 +93,94 @@ const Signup = () => {
           duration: 4000,
           isClosable: true,
         });
-        setLoading(false);
       }
     } catch (error) {
       toast({
-        title: "Error Occured!",
+        title: "Error occurred!",
         status: "error",
         duration: 5000,
         isClosable: true,
         position: "bottom",
       });
+    } finally {
       setLoading(false);
-      console.log(error);
     }
   };
+
   return (
-    <Stack direction="column" spacing={1}>
+    <Stack spacing={3}>
       <FormControl>
-        <FormLabel fontSize={15} fontWeight={900}>
-          Name
-        </FormLabel>
-        <Input
-          value={Name}
-          onChange={(e) => setName(e.target.value)}
-          mb="1rem"
-          type="text"
-          minLength="3"
-          placeholder="Enter your Name...."
-        />
-        <FormLabel fontSize={15} fontWeight={900}>
-          Email Address
-        </FormLabel>
-        <Input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          mb="1rem"
-          isemail="true"
-          type="email"
-          placeholder="Enter  email...."
-        />
+        {[
+          { label: "Name", name: "name", type: "text", minLength: 3 },
+          { label: "Email Address", name: "email", type: "email" },
+        ].map(({ label, name, type, minLength }) => (
+          <Box key={name}>
+            <FormLabel fontSize={15} fontWeight={900}>
+              {label}
+            </FormLabel>
+            <Input
+              name={name}
+              value={form[name]}
+              onChange={handleChange}
+              type={type}
+              minLength={minLength}
+              placeholder={`Enter ${label.toLowerCase()}...`}
+              mb="1rem"
+            />
+          </Box>
+        ))}
+
         <FormLabel fontSize={15} fontWeight={900}>
           Password
         </FormLabel>
-        <InputGroup>
+        <InputGroup mb="1rem">
           <Input
-            pr="4.5rem"
+            name="password"
             type={showPassword ? "text" : "password"}
+            value={form.password}
+            onChange={handleChange}
             placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            mb="1rem"
-            minLength="5"
+            minLength={5}
           />
           <InputRightElement width="4.5rem">
-            <Button h="1.75rem" size="sm" onClick={handleTogglePassword}>
+            <Button size="sm" onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? "Hide" : "Show"}
             </Button>
           </InputRightElement>
         </InputGroup>
+
         <FormLabel fontSize={15} fontWeight={900}>
           Confirm Password
         </FormLabel>
         <Input
-          value={confirmpassword}
-          onChange={(e) => setconfirmPassword(e.target.value)}
-          mb="1rem"
+          name="confirmPassword"
           type="password"
-          placeholder="Confirm password...."
+          value={form.confirmPassword}
+          onChange={handleChange}
+          placeholder="Confirm password"
+          mb="1rem"
         />
+
         <FormLabel fontSize={15} fontWeight={900}>
           Profile Photo
         </FormLabel>
         <Input
+          type="file"
           accept="image/*"
           onChange={handleImage}
-          mb="1rem"
-          type="file"
           p="7px"
-          placeholder="Confirm password...."
+          mb="1rem"
         />
       </FormControl>
-      <Box mb={1}>
-        <Button
-          w="100%"
-          colorScheme="blue"
-          onClick={submitHandler}
-          isLoading={loading}
-        >
-          Sign Up
-        </Button>
-      </Box>
+
+      <Button
+        w="100%"
+        colorScheme="blue"
+        onClick={handleSubmit}
+        isLoading={loading}
+      >
+        Sign Up
+      </Button>
     </Stack>
   );
 };

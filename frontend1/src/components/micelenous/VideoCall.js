@@ -1,7 +1,6 @@
 import React from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import { useParams } from "react-router-dom";
-import { ChatState } from "../../Context/ChatProvider";
 
 const VideoCall = () => {
   const { RoomId } = useParams();
@@ -23,14 +22,8 @@ const VideoCall = () => {
     // start the call
     zp.joinRoom({
       container: element,
-      //   sharedLinks: [
-      //     {
-      //       name: "Copy link",
-      //       url: `http://localhost:3000`,
-      //     },
-      //   ],
       scenario: {
-        mode: ZegoUIKitPrebuilt.OneONoneCall, // To implement 1-on-1 calls, modify the parameter here to [ZegoUIKitPrebuilt.OneONoneCall].
+        mode: ZegoUIKitPrebuilt.OneONoneCall, 
       },
     });
   };

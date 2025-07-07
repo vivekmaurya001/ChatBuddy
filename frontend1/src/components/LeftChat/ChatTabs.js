@@ -6,15 +6,31 @@ import {
   Flex,
   useMediaQuery,
   Image,
+  useToast,
 } from "@chakra-ui/react";
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { ChatState } from "../../Context/ChatProvider";
-import { useToast } from "@chakra-ui/react";
 import axios from "axios";
-import GroupChatModal from "../micelenous/GroupChatModal";
-import { HamburgerIcon, ArrowRightIcon } from "@chakra-ui/icons";
+import { ArrowRightIcon } from "@chakra-ui/icons";
 import SideTabs from "../sidebar/SideTabs";
 import SearchDrawer from "../micelenous/SearchDrawer";
+import { Avatar } from "@chakra-ui/react";
+import { InfoIcon } from "@chakra-ui/icons";
+
+const getSender = (loggedUser, users) =>
+  loggedUser._id === users[0]._id ? users[1] : users[0];
+
+const formatDate = (isoString) => {
+  const date = new Date(isoString);
+  const month = date.toLocaleString("default", { month: "long" });
+  const day = date.getDate();
+  const hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const period = hours >= 12 ? "PM" : "AM";
+  return `${month} ${day} at ${hours % 12 || 12}:${minutes} ${period}`;
+};
+
+const PORT = process.env.REACT_APP_BACKEND_URL;
 
 const ChatTabs = ({
   fetchAgain,
@@ -24,7 +40,6 @@ const ChatTabs = ({
   setClicked,
   setFetchAgain,
 }) => {
-  const toast = useToast();
   const {
     user,
     selectedChat,
@@ -34,91 +49,58 @@ const ChatTabs = ({
     theme,
     setTheme,
   } = ChatState();
-  const [loggedUser, setLoggedUser] = useState(user.user);
-  const [isLargerThan900] = useMediaQuery("(min-width: 900px)");
 
-  const fetchChats = async () => {
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.auhToken}`,
-        },
-      };
-      const { data } = await axios.get("https://chatbuddy-4.onrender.com/api/chat", config);
-      console.log("hi", data);
-      setChats(data);
-    } catch (error) {
-      toast({
-        title: "Error Occured!",
-        description: "Failed to Load the chats",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom-left",
-      });
-    }
-  };
-  const getsender = (loggedUser, Userarray) => {
-    if (loggedUser._id === Userarray[0]._id) return Userarray[1];
-    else return Userarray[0];
-  };
-  const tabChange = () => {
+  const [isLargerThan900] = useMediaQuery("(min-width: 900px)");
+  const toast = useToast();
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const config = {
+          headers: {
+            Authorization: `Bearer ${user.auhToken}`,
+          },
+        };
+        const { data } = await axios.get(`${PORT}/api/chat`, config);
+        setChats(data);
+      } catch (error) {
+        toast({
+          title: "Error Occurred!",
+          description: "Failed to load the chats",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "bottom-left",
+        });
+      }
+    };
+
+    fetchChats();
+  }, [fetchAgain, user.auhToken, setChats, toast]);
+
+  const handleTabChange = () => {
     if (selectedChat) setSwitchTab(!switchTab);
   };
-  function formatDate(isoString) {
-    // Parse the ISO 8601 string into a Date object
-    const date = new Date(isoString);
-
-    // Get the month, day, hours, and minutes
-    const month = date.toLocaleString("default", { month: "long" });
-    const day = date.getDate();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    // Format the result
-    const formattedDate = `${month} ${day} at ${hours % 12 || 12}:${minutes
-      .toString()
-      .padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
-    return formattedDate;
-  }
-  // when the name updated we have to render chats again
-  useEffect(() => {
-    // setLoggedUser(data1.user);
-    fetchChats();
-    // eslint-disable-next-line
-  }, [fetchAgain]);
 
   return (
     <>
-      <Box
-        display="flex"
-        w="100%"
-        justifyContent="space-between"
-        alignItems="center"
-        fontSize={{ base: "28px", md: "30px" }}
-      >
-        <SideTabs
-          clicked={clicked}
-          setClicked={setClicked}
-          theme={theme}
-          setTheme={setTheme}
-        />
+      {/* Top Bar */}
+      <Flex w="100%" justify="space-between" align="center" fontSize={{ base: "28px", md: "30px" }}>
+        <SideTabs clicked={clicked} setClicked={setClicked} theme={theme} setTheme={setTheme} />
         <Flex gap="1rem">
           <SearchDrawer />
-          {/* <GroupChatModal /> */}
-          {isLargerThan900 ? null : (
-            <Button onClick={tabChange}>
-              {" "}
+          {!isLargerThan900 && (
+            <Button onClick={handleTabChange}>
               <ArrowRightIcon />
             </Button>
           )}
         </Flex>
-      </Box>
+      </Flex>
+
+      {/* Chat List */}
       <Stack
         spacing={2}
         align="stretch"
-        //
-        // bgColor={theme ? "black" : "#f9f9f9"}
         bg="transparent"
         w="100%"
         h="89%"
@@ -127,66 +109,56 @@ const ChatTabs = ({
         overflowY="scroll"
       >
         {chats.map((chat, i) => {
+          const isSelected = selectedChat === chat;
+          const isGroup = chat.isGroupChat;
+          const sender = isGroup ? null : getSender(user.user, chat.users);
+
           return (
             <Box
               key={i}
               w="100%"
               minH="60px"
-              borderRadius="7px"
               p="0.2rem 6px"
-              bgColor="#bfb8b8"
+              borderRadius="7px"
               display="flex"
               alignItems="center"
               justifyContent="space-between"
-              onClick={() => setSelectedChat(chat)}
               cursor="pointer"
-              _hover={{ bgColor: theme ? "#2b2b2b" : "#f3f3f4" }}
-              bg={
-                selectedChat === chat
-                  ? "#90e0ef"
-                  : theme
-                  ? "transparent"
-                  : "#E8E8E8"
-              }
-              color={
-                selectedChat === chat ? "white" : theme ? "white" : "black"
-              }
+              bg={isSelected ? "#90e0ef" : theme ? "transparent" : "#E8E8E8"}
+              color={isSelected ? "white" : theme ? "white" : "black"}
+              _hover={{ bg: theme ? "#2b2b2b" : "#f3f3f4" }}
+              onClick={() => setSelectedChat(chat)}
             >
+              {/* Left: Avatar + Chat Info */}
               <Flex gap="1rem">
-                <Image
-                  borderRadius="full"
+              <Avatar
                   boxSize="55px"
-                  src={
-                    !chat.isGroupChat
-                      ? getsender(loggedUser, chat.users).pic
-                      : chat.pic
-                  }
-                  alt="Dan Abramov"
+                  name={isGroup ? chat.name : sender.name}
+                  src={isGroup ? chat.pic : sender.pic}
+                  icon={<InfoIcon />} 
                 />
-                <Flex flexDirection="column">
+                <Flex direction="column">
                   <Text as="b" color="#0077b6">
-                    {!chat.isGroupChat
-                      ? getsender(loggedUser, chat.users).name
-                      : chat.chatName}
+                    {isGroup ? chat.chatName : sender.name}
                   </Text>
-                  <Flex>
+                  <Text fontSize="xs">
                     {chat.latestMessage ? (
-                      <Text fontSize="xs">
-                        <b>{chat.latestMessage.sender.name} : </b>
+                      <>
+                        <b>{chat.latestMessage.sender.name}:</b>{" "}
                         {chat.latestMessage.content.length > 50
-                          ? chat.latestMessage.content.substring(0, 51) + "..."
+                          ? chat.latestMessage.content.slice(0, 51) + "..."
                           : chat.latestMessage.content}
-                      </Text>
+                      </>
                     ) : (
                       "New Chat Created"
                     )}
-                  </Flex>
+                  </Text>
                 </Flex>
               </Flex>
+
+              {/* Right: Timestamp */}
               <Text fontSize="xs" alignSelf="flex-end">
-                {chat.latestMessage
-                  ? formatDate(chat.latestMessage.createdAt)
-                  : formatDate(chat.createdAt)}
+                {formatDate(chat.latestMessage?.createdAt || chat.createdAt)}
               </Text>
             </Box>
           );
